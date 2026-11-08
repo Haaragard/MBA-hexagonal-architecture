@@ -1,0 +1,74 @@
+package br.com.fullcycle.domain.event.ticket;
+
+import br.com.fullcycle.domain.customer.Customer;
+import br.com.fullcycle.domain.event.Event;
+import br.com.fullcycle.domain.event.EventId;
+import br.com.fullcycle.domain.partner.Partner;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
+public class TicketTest {
+
+    @Test
+    @DisplayName("Deve criar um ticket")
+    public void testReserveTicket() throws Exception {
+        // given
+        final var aPartner =
+                Partner.newPartner("John Doe", "41.536.538/0001-00", "john.doe@gmail.com");
+
+        final var aCustomer =
+                Customer.newCustomer("John Doe", "123.456.789-01", "john.doe@gmail.com");
+
+        final var anEvent =
+                Event.newEvent("Disney on Ice", "2021-01-01", 10, aPartner);
+
+        final var expectedTickets = 1;
+        final var expectedTicketOrder = 1;
+        final var expectedTicketStatus = TicketStatus.PENDING;
+        final var expectedEventId = anEvent.eventId();
+        final var expectedCustomerId = aCustomer.customerId();
+
+        // when
+        final var actualTicket = Ticket.newTicket(aCustomer.customerId(), anEvent.eventId());
+
+        // then
+        Assertions.assertNotNull(actualTicket.ticketId());
+        Assertions.assertNotNull(actualTicket.reservedAt());
+        Assertions.assertNull(actualTicket.paidAt());
+        Assertions.assertEquals(expectedEventId, actualTicket.eventId());
+        Assertions.assertEquals(expectedCustomerId, actualTicket.customerId());
+        Assertions.assertEquals(expectedTicketStatus, actualTicket.status());
+    }
+
+    @Test
+    @DisplayName("Deve cancelar um ticket")
+    public void testCancelTicket() throws Exception {
+        // given
+        final var aCustomer =
+                Customer.newCustomer("John Doe", "123.456.789-01", "john.doe@gmail.com");
+        final var aTicket = Ticket.newTicket(aCustomer.customerId(), EventId.unique());
+
+        // when
+        aTicket.cancel();
+
+        // then
+        Assertions.assertEquals(TicketStatus.CANCELLED, aTicket.status());
+    }
+
+    @Test
+    @DisplayName("Cancelar um ticket já cancelado deve ser idempotente")
+    public void testCancelTicketTwice() throws Exception {
+        // given
+        final var aCustomer =
+                Customer.newCustomer("John Doe", "123.456.789-01", "john.doe@gmail.com");
+        final var aTicket = Ticket.newTicket(aCustomer.customerId(), EventId.unique());
+        aTicket.cancel();
+
+        // when
+        Assertions.assertDoesNotThrow(aTicket::cancel);
+
+        // then
+        Assertions.assertEquals(TicketStatus.CANCELLED, aTicket.status());
+    }
+}
